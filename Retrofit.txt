@@ -1,0 +1,74 @@
+implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+implementation 'com.squareup.retrofit2:converter-gson:2.2.0'
+implementation 'com.google.code.gson:gson:2.6.2'
+	
+==================================================================================================
+	
+	
+	import okhttp3.OkHttpClient;
+	import retrofit2.Retrofit;
+	import retrofit2.converter.gson.GsonConverterFactory;
+
+	public class RetrofitClientInstance {
+    private static Retrofit retrofit;
+    private static final String BASE_URL = "http://url";
+
+    public static Retrofit getRetrofitInstance() {
+        if (retrofit == null) {
+            OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                    .connectTimeout(1, TimeUnit.MINUTES)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(15, TimeUnit.SECONDS)
+                    .build();
+
+            retrofit = new Retrofit.Builder()
+                    .baseUrl(BASE_URL)
+                    .client(okHttpClient)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+        }
+        return retrofit;
+    }
+}
+
+
+=======================================================================================
+	public interface GetDataService {
+
+    @POST("login")
+    Call<LoginModel> login(@Body RequestBody params);
+	
+	@GET("profile")
+    Call<ProfileModel> getprofile(@Header("Cookie") String cookie, @Query("userid") String name);
+	
+	}
+===========================================================================================================
+
+
+
+
+						GetDataService service = RetrofitClientInstance.getRetrofitInstance().create(GetDataService.class);
+                        JSONObject jsonParams = new JSONObject();
+                        try {
+                            jsonParams.put("login_mail", strEmail);
+                            jsonParams.put("password", strPass);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        RequestBody body = RequestBody.create(okhttp3.MediaType.parse("application/json; charset=utf-8"), (jsonParams).toString());
+                        Call<LoginModel> call = service.login(body);
+                        L.e(call.request().url().toString());
+                        L.e(call.request().body().toString());
+                        call.enqueue(new Callback<LoginModel>() {
+                            @Override
+                            public void onResponse(Call<LoginModel> call, Response<LoginModel> response) {
+                                L.e(response.body().toString());
+                               
+                            }
+
+                            @Override
+                            public void onFailure(Call<LoginModel> call, Throwable t) {
+                                L.e(t.toString());
+                                
+                            }
+                        });	
