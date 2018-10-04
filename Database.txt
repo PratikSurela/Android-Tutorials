@@ -1,0 +1,159 @@
+
+===================================================================
+    Database.init(getApplicationContext());
+	SQLiteOnWeb.init(this).start();
+		
+	releaseImplementation 'io.github.skyhacker2:sqliteonweb-no-op:1.0.2'
+
+================================================================
+
+	public class Database extends SQLiteOpenHelper {
+		static Database instance = null;
+		static SQLiteDatabase database = null;
+
+		static final String DATABASE_NAME = "DB.db";
+		static final int DATABASE_VERSION = 2;
+
+		public static final String PROFILE_MAIN_TABLE = "ProfileTable";
+		public static final String COLUMN_MAIN_ID = "_id";
+		public static final String PROFILENAME = "ProfileName";
+		public static final String BINCOUNT = "BinCount";
+		public static final String UNITS = "Units";
+
+		
+	 @Override
+		public void onCreate(SQLiteDatabase db) {
+
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + BIN_MAIN_TABLE + " ( "
+					+ BIN_MAIN_ID + " INTEGER primary key autoincrement, "
+					+ PROFILEID + " INTEGER, "
+					+ BINNAME + " TEXT, "
+					+ MIN + " TEXT, "
+					+ MAX + " TEXT NOT NULL)");
+
+					
+			checknewentry(db);
+
+		}
+			
+		   public static long createmulitibin(String name, int sessionid) {
+			ContentValues cv = new ContentValues();
+			cv.put(GENRATEDBIN, name);
+			cv.put(SESSION_MAIN_ID, sessionid);
+			return getDatabase().insert(SESSION_MULITIBIN_TABLE, null, cv);
+		}
+
+		public static void deletemulitibin(int sessionid) {
+			int delid = getmultibin(sessionid);
+			getDatabase().delete(SESSION_MULITIBIN_TABLE, SESSIONCOUNT_MULITIBIN_MAIN_ID + " = " + Long.valueOf(delid), null);
+		}
+
+		
+		 public static int getmultibin(int sessionmainid) {
+			Cursor cursor;
+			int lastItemId = -1;
+			try {
+				cursor = getDatabase().query(SESSION_MULITIBIN_TABLE, null,
+						SESSION_MAIN_ID + " = " + "'" + sessionmainid + "'", null, null, null,
+						null);
+				cursor.moveToLast();
+				lastItemId = cursor.getInt(cursor.getColumnIndex(SESSIONCOUNT_MULITIBIN_MAIN_ID));
+				cursor.close();
+			} catch (Exception e) {
+			}
+			return lastItemId;
+		}
+		
+			public static long updateSessionGlobalCount(SeesionCountModel obj) {
+			ContentValues cv = new ContentValues();
+			cv.put(MAX, obj.max);
+			cv.put(MIN, obj.min);
+			cv.put(AVG, obj.avg);
+			return getDatabase().update(SESSION_COUNT_Global_TABLE, cv, SESSIONCOUNT_GLOBAL_MAIN_ID + "=" + obj.SESSIONCOUNT_MAIN_ID, null);
+		}
+		
+		
+		  Database(Context context) {
+
+			super(context, DATABASE_NAME, null, DATABASE_VERSION);
+		}
+
+		public static void init(Context context) {
+			if (null == instance) {
+				instance = new Database(context);
+			}
+		}
+
+		public static SQLiteDatabase getDatabase() {
+			if (null == database) {
+				database = instance.getWritableDatabase();
+			}
+			return database;
+		}
+
+		public static void deactivate() {
+			if (null != database && database.isOpen()) {
+				database.close();
+			}
+			database = null;
+			instance = null;
+		}
+
+
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+			L.e("onupgrade");
+
+			checknewentry(db);
+		}
+
+
+		public void checknewentry(SQLiteDatabase db) {
+
+
+			if (!isTableExists(db, SESSION_BIN_TABLE)) {
+				db.execSQL(CREATE_TABLE_SESSION_BIN_TABLE);
+			}
+
+
+		}
+
+		public boolean isTableExists(SQLiteDatabase db, String tableName) {
+			boolean isExist = false;
+			Cursor cursor = db.rawQuery("select DISTINCT tbl_name from sqlite_master where tbl_name = '" + tableName + "'", null);
+			if (cursor != null) {
+				if (cursor.getCount() > 0) {
+					isExist = true;
+				}
+				cursor.close();
+			}
+			return isExist;
+		}
+
+		public void alertTable(SQLiteDatabase db, String tablename, String field, String type, String DEFAULT) {
+			String ALTER_USER_TABLE_ADD_USER_SOCIETY =
+					"ALTER TABLE " + tablename + " ADD " + field + " " + type;
+			if (!DEFAULT.isEmpty()) {
+				ALTER_USER_TABLE_ADD_USER_SOCIETY = ALTER_USER_TABLE_ADD_USER_SOCIETY + " DEFAULT " + DEFAULT;
+			} else {
+				ALTER_USER_TABLE_ADD_USER_SOCIETY = ALTER_USER_TABLE_ADD_USER_SOCIETY + " DEFAULT  ' ' ";
+
+			}
+			db.execSQL(ALTER_USER_TABLE_ADD_USER_SOCIETY);
+		}
+
+		private boolean isFieldExist(SQLiteDatabase inDatabase, String inTable, String columnToCheck) {
+			Cursor mCursor = null;
+			try {
+				mCursor = inDatabase.rawQuery("SELECT * FROM " + inTable + " LIMIT 0", null);
+				if (mCursor.getColumnIndex(columnToCheck) != -1)
+					return true;
+				else {
+					return false;
+				}
+			} catch (Exception Exp) {
+				return false;
+			} finally {
+				if (mCursor != null) mCursor.close();
+			}
+		}
